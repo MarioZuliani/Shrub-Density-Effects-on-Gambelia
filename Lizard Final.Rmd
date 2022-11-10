@@ -1,0 +1,218 @@
+---
+title: "Lizard Final"
+author: "Mario"
+date: "12/04/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+#key libraries for data joins spatially####
+library(tidyverse)
+library(sf)
+library(RColorBrewer)
+library(scales)
+#set key attributes####
+x = 4326 #crs for first spatial df
+y = 4326 #crs for second spatial df
+z = 20 #set buffer is using a join to point data SET FOR 20M
+#data, read in, set as sf, list projection####
+shrubs <- read_csv("shrubs.csv") %>% 
+  st_as_sf(coords=c("long","lat"), crs = x, remove=FALSE) %>% 
+  st_transform(32610) #crs = 32610 is UTM and will return distances in meters
+animals <- read_csv("tidy.csv") %>% 
+  st_as_sf(coords=c("long","lat"), crs = y, remove=FALSE) %>% 
+  st_transform(32610) #crs = 32610 is UTM and will return distances in meters
+#create buffer for point data####
+buffer <- st_buffer(animals, z) #decide on spatial scale
+#spatially returns overlap instances within a buffer####
+#returns a dataframe with only the positive co-occurrences
+joined.xy <- st_intersection(buffer, shrubs)
+#counts up multiple instances and generates new vector as counts by grouping factors####
+joined.xy <- joined.xy %>% 
+  group_by(uniID, lizard) %>% 
+  summarize(n_shrubs = n()) %>% 
+  st_drop_geometry
+#rejoins to first object, ie the buffer and generates instances with no overlaps as zero####
+tidy_all <- left_join(animals, joined.xy, by = "uniID") %>% 
+  dplyr::mutate(n_shrubs = replace_na(n_shrubs, 0))
+#QA/QC####
+#check to ensure df dimensions and that zeros are reasonable
+max(tidy_all$n_shrubs) #checks ecological viability
+min(tidy_all$n_shrubs) #checks ecological viability
+sum(tidy_all$n_shrubs) #checks positive co-occurrences
+nrow(buffer) - nrow(tidy_all) #ensure that tidy dataframe comprised all buffers
+#write data AS tidy_20m
+#write.csv(tidy_all, file = "tidy_20m.csv")
+library(dplyr)
+tidy_20m <- read.csv("tidy_20m.csv")%>%
+  distinct(uniID, .keep_all = TRUE)
+###write.csv(tidy_20m, file = "tidy_20m.csv")
+###THIS SHOULD BE ALL CLEANED UP AND NOW WORK!!!
+```
+###Main Data and RSPF function
+```{r}
+library(ResourceSelection)
+library(emmeans)
+library(dplyr)
+data1 <- tidy_20m %>%
+  dplyr::select(rep, status, year, ground, mesohabitat, Aspect.x, Slope.x, Elev.x, KDF.x, Shrub_Cov.x, NDVI.x, Solar.x, aspect.cat, twenty_meter)
+data1 <- data1[data1$twenty_meter <90,]
+data1$year <-  as.character(data1$year)
+head(data1)
+###Putting ground and mesohabitat as factos will not allow me to run the plot, mep or kdepairs
+model.rspf <- function(x) {rspf(status ~ twenty_meter  + Shrub_Cov.x, x, m=0, B = 99, model = TRUE)
+}
+###This is the rspf for shrub density!
+model.rspf2 <- function(x) {rspf(status ~ twenty_meter + ground, x, m=0, B = 99, model = TRUE)
+}
+model.rspf3 <- function(x) {rspf(status ~ Shrub_Cov.x  + ground, x, m=0, B = 99, model = TRUE)
+}
+m1 <- model.rspf(data1)
+summary(m1)
+plot(m1) ###Not working because of ground variable
+mep(m1) # marginal effects similar to plot but with CIs
+kdepairs(m1) # 2D kernel density estimates.... not working cuz of ground variabl
+m5 <- model.rspf2(data1)
+summary(m5)
+#plot(m5) 
+#mep(m5)
+#kdepairs(m5)
+m6 <- model.rspf3(data1)
+summary(m6)
+#plot(m6) 
+#mep(m6)
+#kdepairs(m6)
+CAIC(m1,m5,m6)
+```
+
+###April 29th work!!!
+```{r}
+'model.rspf2 <- function(x) {rspf(status ~ twenty_meter + Mesohabitat, x, m=0, B = 95, model = TRUE)
+}
+m5 <- model.rspf2(rspf.data)
+summary(m5)
+###Frequency of visitation by shrub density
+mp1 <- as.data.frame(m5$model)
+mp2 <- as.data.frame(m5$fitted.values)
+mp3 <- as.data.frame(m5$std.error)
+rspf.data <- cbind(mp1,mp2)
+names(rspf.data)[4] <- "fitted_values"
+names(rspf.data)[3] <- "Mesohabitat"
+fig <- ggplot(rspf.data, aes(twenty_meter, fitted_values, fill = Mesohabitat)) +
+  geom_line() +  geom_ribbon(aes(ymin = fitted_values -0.008, ymax = fitted_values +0.008, fill = Mesohabitat), alpha = 0.4)+
+  labs(x = "Shrub Density", y= "Use") + theme_classic() + scale_color_manual(values = c("above" = "red", "below" = "dark blue")) + geom_line(aes(y = fitted_values))+ scale_fill_manual(values=c("red", "dark blue"), name="Mesohabitat") + theme(aspect.ratio = 1)
+fig'
+```
+
+```{r}
+model.rspf3 <- function(x) {rspf(status ~ Shrub_Cov.x  + ground, x, m=0, B = 99, model = TRUE)
+}
+m6 <- model.rspf3(data1)
+summary(m6)
+```
+
+ggline(rspf.data, x = "day", y = "temp", color = "Mesohabitat",
+ add = "mean_se", shape = "microsite", xlab = "Shrub Density", ylab = "Use", legend= "right", legend.title = "")
+```{r}
+#Density and cover correlation
+data1$status <- as.character(data1$status)
+fig2 <- ggplot (data1, aes(x = twenty_meter,y= Shrub_Cov.x)) +
+  geom_point() +
+  labs(fill = "", x = "Shrub Density", y= "Shrub Cover") + theme_classic() +  scale_color_manual(values = c("0" = "red", "1" = "dark blue")) + labs(fill = "Status") + theme(aspect.ratio = 1)  + xlim(0,60) + labs(color = "Mesohabitat") + geom_smooth(method = lm, se=F)
+fig2 
+```
+###All Below used for Paper!!!!! (May 15 2022)
+```{r}
+data <- read_csv("tidy_20m_2022.csv") %>%
+  dplyr::select(rep, status, year, ground, mesohabitat, slope, elevation, shrub_cover, shrub_density, NDVI, solar) %>%
+  mutate(year = as.character(year), status = as.character(status))
+```
+```{r}
+###Shrub Cover
+m1 <- rspf(status ~ shrub_cover + NDVI, data, m=0, B = 99, model = TRUE)
+summary(m1)
+p1 <- as.data.frame(m1$fitted.values)
+p1 <- cbind(data, p1)
+p1 <- p1 %>%
+rename(use = 'm1$fitted.values')
+#use model
+fig2 <- ggplot(p1, aes(shrub_cover, use, color = ground)) + labs(fill = "", x = "Shrub Cover", y= "Use", color = "Mesohabitat") +
+geom_smooth() + theme_classic() + scale_color_manual(values = c("above" = "red", "below" = "dark blue")) + labs(fill = "Mesohabitat") + theme(aspect.ratio = 1)
+fig2
+```
+```{r}
+###shrub density
+m2 <- rspf(status ~ shrub_density + NDVI + ground, data, m=0, B = 99, model = TRUE)
+summary(m2)
+p2 <- as.data.frame(m2$fitted.values)
+p2 <- cbind(data, p2)
+p2 <- p2 %>%
+rename(use = 'm2$fitted.values')
+#use model
+fig1 <-ggplot(p2, aes(shrub_density, use, color = ground)) +
+geom_smooth() +
+labs(fill = "", x = "Shrub Density", y= "Use", color = "Mesohabitat") +
+theme_classic() + scale_color_manual(values = c("above" = "red", "below" = "dark blue")) + labs(fill = "Mesohabitat") + theme(aspect.ratio = 1) +
+xlim(0,200)
+fig1
+```
+```{r}
+fig3 <- ggplot (data, aes(x = shrub_density,y= shrub_cover)) +
+  geom_point() +
+  labs(fill = "", x = "Shrub Density", y= "Shrub Cover") + theme_classic() +  scale_color_manual(values = c("0" = "red", "1" = "dark blue")) + labs(fill = "Status") + theme(aspect.ratio = 1)  + xlim(0,60) + labs(color = "Mesohabitat")
+fig3
+data_cor <- data[data$shrub_density <200,]
+res <- cor.test(data_cor$shrub_density, data_cor$shrub_cover)
+res   ###Sig positive relation. Report df, pvalue and cor value
+CAIC(m1,m2) #m1 is cover m2 is density
+```
+
+```{r}
+ground_truth <- read.csv("Ground Truth.csv")
+t.test(ground_truth$twenty_meter, ground_truth$ground_truth)
+```
+
+#Set up Lizard Sex data, and Join to telemetry data!
+```{r}
+Liz_2016 <- read_csv("2016_lizards.csv")
+Liz_2017 <- read_csv("2017_lizards.csv")
+Liz_2018 <- read_csv("2018_lizards.csv")
+
+Liz_2016_2017 <- merge(Liz_2016, Liz_2017, all = TRUE)
+Liz_sex <- merge(Liz_2016_2017, Liz_2018, all = TRUE)
+
+#write.csv(Liz_sex, file = "Liz_sex.csv")
+
+#Set up Density data so we can merge with Lizard sex data
+data_sex <- tidy_20m %>%
+  dplyr::select(rep, status, lizard.x, year, ground, mesohabitat, Aspect.x, Slope.x, Elev.x, KDF.x, Shrub_Cov.x, NDVI.x, Solar.x, aspect.cat, twenty_meter)
+data_sex <- data_sex[data_sex$twenty_meter <90,]
+data_sex$year <-  as.character(data_sex$year)
+names(data_sex)[3] <- "lizard"
+
+#Join Lizard Sex with Telemetry data by lizard column
+new_data <- left_join(data_sex, Liz_sex, by = "lizard")
+names(new_data)[19] <- "sex"
+
+###Shafer et al 2012 seperates sex and runs different rsf for each.
+
+###Split the data into M subset.
+data_m <- new_data %>% filter(sex !="f")
+data_m <- data_m %>% filter(sex != "uk")
+
+###Split the data into F subset.
+data_f <- new_data %>% filter(sex !="m")
+data_f <- data_f %>% filter(sex != "uk")
+
+model.rspf_sex1 <- function(x) {rspf(status ~ twenty_meter + ground, x, m=0, B = 99, model = TRUE)
+}
+
+m7 <- model.rspf_sex1(data_m)
+summary(m7)
+
+m8 <- model.rspf_sex1(data_f)
+summary(m8)
+```
