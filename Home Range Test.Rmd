@@ -98,9 +98,12 @@ cuicui3 <- data.frame(t(cuicui3)) #flips the dataframe
 
 ```{r}
 ###Tidy Up data
+tidy_20m <- read.csv("tidy_20m.csv")%>%
+  distinct(uniID, .keep_all = TRUE)
 HR_final <- read.csv("HR_FINAL.csv")
 tidy_20mdf <- tidy_20m[-1]
 names(tidy_20mdf)[5] <- "lizard"
+
 
 ###Join HR data with Lizard data
 Data_HR <- left_join(new_data, HR_final, by = "lizard")
@@ -113,7 +116,7 @@ summary <- Data_HR %>%
   group_by(year, sex, X95) %>%
   summarise()
 summary <- summary %>%
-  drop_na()
+  na.omit()
 
 male_2016 <- summary %>% filter(sex != "f") %>%
   filter(year == "2016")
@@ -151,8 +154,20 @@ final_summary <- final_summary %>%
   summarise(hr = mean(X95))
 
 
-write.csv(final_summary, file = "HR_Summary.csv")
+#write.csv(final_summary, file = "HR_Summary.csv")
 ```
+```{r}
+summary_liz <- Data_HR %>%
+  group_by(lizard, year, sex, X95) %>%
+  summarise()
+summary_liz <- summary_liz %>%
+  na.omit()
+names(summary_liz)[4] <- "HR"
+#write.csv(summary_liz, file = "Lizard HR Summary")
+```
+
+
+
 ###Note: HR is in hectars
 
 
