@@ -105,6 +105,26 @@ tidy_20mdf <- tidy_20m[-1]
 names(tidy_20mdf)[5] <- "lizard"
 
 
+Liz_2016 <- read_csv("2016_lizards.csv")
+Liz_2017 <- read_csv("2017_lizards.csv")
+Liz_2018 <- read_csv("2018_lizards.csv")
+
+Liz_2016_2017 <- merge(Liz_2016, Liz_2017, all = TRUE)
+Liz_sex <- merge(Liz_2016_2017, Liz_2018, all = TRUE)
+
+#write.csv(Liz_sex, file = "Liz_sex.csv")
+
+#Set up Density data so we can merge with Lizard sex data
+data_sex <- tidy_20m %>%
+  dplyr::select(rep, status, lizard.x, year, ground, mesohabitat, Aspect.x, Slope.x, Elev.x, KDF.x, Shrub_Cov.x, NDVI.x, Solar.x, aspect.cat, twenty_meter)
+data_sex <- data_sex[data_sex$twenty_meter <90,]
+data_sex$year <-  as.character(data_sex$year)
+names(data_sex)[3] <- "lizard"
+
+#Join Lizard Sex with Telemetry data by lizard column
+new_data <- left_join(data_sex, Liz_sex, by = "lizard")
+names(new_data)[19] <- "sex"
+
 ###Join HR data with Lizard data
 Data_HR <- left_join(new_data, HR_final, by = "lizard")
 Data_HR <- Data_HR %>% filter(sex != "uk")
@@ -166,6 +186,169 @@ names(summary_liz)[4] <- "HR"
 #write.csv(summary_liz, file = "Lizard HR Summary")
 ```
 
+```{r}
+summary <- Data_HR %>%
+  group_by(year, sex, X100) %>%
+  summarise()
+summary <- summary %>%
+  na.omit()
+
+male_2016 <- summary %>% filter(sex != "f") %>%
+  filter(year == "2016")
+male_2016$st_error <- sd(male_2016$X100)/sqrt(length(male_2016$X100))
+
+male_2017 <- summary %>% filter(sex != "f") %>%
+  filter(year == "2017")
+male_2017$st_error <- sd(male_2017$X100)/sqrt(length(male_2017$X100))
+
+male_2018 <- summary %>% filter(sex != "f") %>%
+  filter(year == "2018")
+male_2018$st_error <- sd(male_2018$X100)/sqrt(length(male_2018$X100))
+
+female_2016 <- summary %>% filter(sex != "m") %>%
+  filter(year == "2016")
+female_2016$st_error <- sd(female_2016$X100)/sqrt(length(female_2016$X100))
+
+female_2017 <- summary %>% filter(sex != "m") %>%
+  filter(year == "2017")
+female_2017$st_error <- sd(female_2017$X100)/sqrt(length(female_2017$X100))
+
+female_2018 <- summary %>% filter(sex != "m") %>%
+  filter(year == "2018")
+female_2018$st_error <- sd(female_2018$X100)/sqrt(length(female_2018$X100))
+
+all_male <- rbind(male_2016, male_2017)
+all_male <- rbind(all_male, male_2018)
+all_female <- rbind(female_2016, female_2017)
+all_female <- rbind(all_female, female_2018)
+final_summary <- rbind(all_male, all_female)
+
+
+final_summary <- final_summary %>%
+  group_by(year, sex, st_error) %>%
+  summarise(hr = mean(X100))
+```
+
+
+
+```{r}
+###Try with older CRS projection
+###2016 Projections
+track.pop <-HR
+track.pop <- track.pop %>% filter(lizard != "x") #were not 5 relocations for x
+coordinates(track.pop) <- ~long+lat
+proj4string(track.pop) <- CRS("+proj=longlat") #assign projection and coordinate reference system
+track.pop <- spTransform(track.pop, CRS("+proj=utm +zone=10")) #transform
+
+par(mar=c(1, 1, 1, 1)) ###This fixes everything!!!
+
+cp4 <- mcp(track.pop[,1], unout = c("ha"))
+as.data.frame(cp4)
+plot(cp4)
+plot(track.pop, col=as.data.frame(track.pop[,1], add =TRUE))
+cuicui4 <- mcp.area(track.pop[,1], unout = c("ha"))
+
+cuicui4 <- data.frame(t(cuicui4)) #Need to flip the dataframe
+
+#write.csv(cuicui4, file = "HR2016CRS.csv")
+
+###2017 Projections
+###HR for 2017
+track.pop2 <-HR2
+track.pop2 <- track.pop2 %>% filter(lizard != "x") #were not 5 relocations for x
+coordinates(track.pop2) <- ~long+lat
+proj4string(track.pop2) <- CRS("+proj=longlat") #assign projection and coordinate reference system
+track.pop2 <- spTransform(track.pop2, CRS("+proj=utm +zone=10")) #transform
+
+par(mar=c(1, 1, 1, 1)) ###This fixes everything!!!
+
+
+cp5 <- mcp(track.pop2[,1], unout = c("ha"))
+as.data.frame(cp5)
+plot(cp5)
+plot(track.pop2, col=as.data.frame(track.pop2[,1], add =TRUE))
+cuicui5 <- mcp.area(track.pop2[,1], unout = c("ha"))
+
+cuicui5 <- data.frame(t(cuicui5)) #Need to flip the dataframe
+
+#write.csv(cuicui5, file = "HR2017CRS.csv")
+###2018
+track.pop3 <-HR3
+track.pop3 <- track.pop3 %>% filter(lizard != "x") #were not 5 relocations for x
+coordinates(track.pop3) <- ~long+lat
+proj4string(track.pop3) <- CRS("+proj=longlat") #assign projection and coordinate reference system
+track.pop3 <- spTransform(track.pop3, CRS("+proj=utm +zone=10")) #transform
+
+par(mar=c(1, 1, 1, 1)) ###This fixes everything!!!
+
+
+cp6 <- mcp(track.pop3[,1], unout = c("ha"))
+as.data.frame(cp6)
+plot(cp6)
+plot(track.pop3, col=as.data.frame(track.pop3[,1], add =TRUE))
+cuicui6 <- mcp.area(track.pop3[,1], unout = c("ha"))
+
+cuicui6 <- data.frame(t(cuicui6)) #Need to flip the dataframe
+
+#write.csv(cuicui6, file = "HR2018CRS.csv")
+```
+
+```{r}
+###Set up with other CRS system
+
+HR_final_CRS <- read.csv("HRS_ALL_CRS.csv")
+
+Data_HR2 <- left_join(new_data, HR_final_CRS, by = "lizard")
+Data_HR2 <- Data_HR %>% filter(sex != "uk")
+
+#write.csv(Data_HR, file = "Lizard Home Range.csv")
+
+###Summarize data with X95 HR
+summary2 <- Data_HR %>%
+  group_by(year, sex, X100) %>%
+  summarise()
+summary2 <- summary2 %>%
+  na.omit()
+
+male_2016 <- summary2 %>% filter(sex != "f") %>%
+  filter(year == "2016")
+male_2016$st_error <- sd(male_2016$X100)/sqrt(length(male_2016$X100))
+
+male_2017 <- summary2 %>% filter(sex != "f") %>%
+  filter(year == "2017")
+male_2017$st_error <- sd(male_2017$X100)/sqrt(length(male_2017$X100))
+
+male_2018 <- summary2 %>% filter(sex != "f") %>%
+  filter(year == "2018")
+male_2018$st_error <- sd(male_2018$X100)/sqrt(length(male_2018$X100))
+
+female_2016 <- summary2 %>% filter(sex != "m") %>%
+  filter(year == "2016")
+female_2016$st_error <- sd(female_2016$X100)/sqrt(length(female_2016$X100))
+
+female_2017 <- summary2 %>% filter(sex != "m") %>%
+  filter(year == "2017")
+female_2017$st_error <- sd(female_2017$X100)/sqrt(length(female_2017$X100))
+
+female_2018 <- summary2 %>% filter(sex != "m") %>%
+  filter(year == "2018")
+female_2018$st_error <- sd(female_2018$X100)/sqrt(length(female_2018$X100))
+
+all_male <- rbind(male_2016, male_2017)
+all_male <- rbind(all_male, male_2018)
+all_female <- rbind(female_2016, female_2017)
+all_female <- rbind(all_female, female_2018)
+final_summary2 <- rbind(all_male, all_female)
+
+
+final_summary2 <- final_summary2 %>%
+  group_by(year, sex, st_error) %>%
+  summarise(hr = mean(X100))
+
+
+###Summary output provides the same data as the other one i ran so values are the same!
+
+```
 
 
 ###Note: HR is in hectars
