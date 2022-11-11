@@ -187,11 +187,13 @@ names(summary_liz)[4] <- "HR"
 ```
 
 ```{r}
+###with 100% MCP
 summary <- Data_HR %>%
   group_by(year, sex, X100) %>%
   summarise()
 summary <- summary %>%
   na.omit()
+
 
 male_2016 <- summary %>% filter(sex != "f") %>%
   filter(year == "2016")
@@ -227,6 +229,12 @@ final_summary <- rbind(all_male, all_female)
 final_summary <- final_summary %>%
   group_by(year, sex, st_error) %>%
   summarise(hr = mean(X100))
+
+library(emmeans)
+m <- glm(X100~sex + year, family = gaussian, summary)
+anova(m, test = "Chisq")
+e <- emmeans(m, pairwise~sex|year)
+e
 ```
 
 
@@ -310,6 +318,7 @@ summary2 <- Data_HR %>%
 summary2 <- summary2 %>%
   na.omit()
 
+
 male_2016 <- summary2 %>% filter(sex != "f") %>%
   filter(year == "2016")
 male_2016$st_error <- sd(male_2016$X100)/sqrt(length(male_2016$X100))
@@ -345,6 +354,10 @@ final_summary2 <- final_summary2 %>%
   group_by(year, sex, st_error) %>%
   summarise(hr = mean(X100))
 
+m2 <- glm(X100~sex + year, family = gaussian, summary2)
+anova(m2, test = "Chisq")
+e2 <- emmeans(m, pairwise~sex|year)
+e2
 
 ###Summary output provides the same data as the other one i ran so values are the same!
 
