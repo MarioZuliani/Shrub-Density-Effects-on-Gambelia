@@ -138,6 +138,12 @@ summary <- Data_HR %>%
 summary <- summary %>%
   na.omit()
 
+Liz_Summary_X95 <- Data_HR %>%
+  group_by(lizard, year, sex, X95)%>%
+  summarise() %>% na.omit()
+
+#write.csv(Liz_Summary_X95, file = "Lizard_Summary_x95.csv")
+
 male_2016 <- summary %>% filter(sex != "f") %>%
   filter(year == "2016")
 male_2016$st_error <- sd(male_2016$X95)/sqrt(length(male_2016$X95))
@@ -169,7 +175,7 @@ all_female <- rbind(all_female, female_2018)
 final_summary <- rbind(all_male, all_female)
 
 
-final_summary <- final_summary %>%
+final_summary_95 <- final_summary %>%
   group_by(year, sex, st_error) %>%
   summarise(hr = mean(X95))
 
@@ -198,7 +204,7 @@ Liz_Summary <- Data_HR %>%
   group_by(lizard, year, sex, X100)%>%
   summarise() %>% na.omit()
 
-write.csv(Liz_Summary, file = "Lizard_Summary.csv")
+#write.csv(Liz_Summary, file = "Lizard_Summary.csv")
 
 male_2016 <- summary %>% filter(sex != "f") %>%
   filter(year == "2016")

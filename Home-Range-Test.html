@@ -1122,6 +1122,13 @@ summary &lt;- Data_HR %&gt;%
 <pre class="r"><code>summary &lt;- summary %&gt;%
   na.omit()
 
+Liz_Summary_X95 &lt;- Data_HR %&gt;%
+  group_by(lizard, year, sex, X95)%&gt;%
+  summarise() %&gt;% na.omit()</code></pre>
+<pre><code>## `summarise()` has grouped output by &#39;lizard&#39;, &#39;year&#39;, &#39;sex&#39;. You can override
+## using the `.groups` argument.</code></pre>
+<pre class="r"><code>#write.csv(Liz_Summary_X95, file = &quot;Lizard_Summary_x95.csv&quot;)
+
 male_2016 &lt;- summary %&gt;% filter(sex != &quot;f&quot;) %&gt;%
   filter(year == &quot;2016&quot;)
 male_2016$st_error &lt;- sd(male_2016$X95)/sqrt(length(male_2016$X95))
@@ -1153,7 +1160,7 @@ all_female &lt;- rbind(all_female, female_2018)
 final_summary &lt;- rbind(all_male, all_female)
 
 
-final_summary &lt;- final_summary %&gt;%
+final_summary_95 &lt;- final_summary %&gt;%
   group_by(year, sex, st_error) %&gt;%
   summarise(hr = mean(X95))</code></pre>
 <pre><code>## `summarise()` has grouped output by &#39;year&#39;, &#39;sex&#39;. You can override using the
@@ -1182,7 +1189,7 @@ Liz_Summary &lt;- Data_HR %&gt;%
   summarise() %&gt;% na.omit()</code></pre>
 <pre><code>## `summarise()` has grouped output by &#39;lizard&#39;, &#39;year&#39;, &#39;sex&#39;. You can override
 ## using the `.groups` argument.</code></pre>
-<pre class="r"><code>write.csv(Liz_Summary, file = &quot;Lizard_Summary.csv&quot;)
+<pre class="r"><code>#write.csv(Liz_Summary, file = &quot;Lizard_Summary.csv&quot;)
 
 male_2016 &lt;- summary %&gt;% filter(sex != &quot;f&quot;) %&gt;%
   filter(year == &quot;2016&quot;)
