@@ -1160,10 +1160,10 @@ final_summary &lt;- final_summary %&gt;%
 ## `.groups` argument.</code></pre>
 <pre class="r"><code>#write.csv(final_summary, file = &quot;HR_Summary.csv&quot;)</code></pre>
 <pre class="r"><code>summary_liz &lt;- Data_HR %&gt;%
-  group_by(lizard, year, sex, X95) %&gt;%
+  group_by(lizard, year, sex, mass, SVL_mm, tail, tail_mm, X95) %&gt;%
   summarise()</code></pre>
-<pre><code>## `summarise()` has grouped output by &#39;lizard&#39;, &#39;year&#39;, &#39;sex&#39;. You can override
-## using the `.groups` argument.</code></pre>
+<pre><code>## `summarise()` has grouped output by &#39;lizard&#39;, &#39;year&#39;, &#39;sex&#39;, &#39;mass&#39;, &#39;SVL_mm&#39;,
+## &#39;tail&#39;, &#39;tail_mm&#39;. You can override using the `.groups` argument.</code></pre>
 <pre class="r"><code>summary_liz &lt;- summary_liz %&gt;%
   na.omit()
 names(summary_liz)[4] &lt;- &quot;HR&quot;
@@ -1177,6 +1177,12 @@ summary &lt;- Data_HR %&gt;%
 <pre class="r"><code>summary &lt;- summary %&gt;%
   na.omit()
 
+Liz_Summary &lt;- Data_HR %&gt;%
+  group_by(lizard, year, sex, X100)%&gt;%
+  summarise() %&gt;% na.omit()</code></pre>
+<pre><code>## `summarise()` has grouped output by &#39;lizard&#39;, &#39;year&#39;, &#39;sex&#39;. You can override
+## using the `.groups` argument.</code></pre>
+<pre class="r"><code>write.csv(Liz_Summary, file = &quot;Lizard_Summary.csv&quot;)
 
 male_2016 &lt;- summary %&gt;% filter(sex != &quot;f&quot;) %&gt;%
   filter(year == &quot;2016&quot;)
@@ -1214,8 +1220,10 @@ final_summary &lt;- final_summary %&gt;%
   summarise(hr = mean(X100))</code></pre>
 <pre><code>## `summarise()` has grouped output by &#39;year&#39;, &#39;sex&#39;. You can override using the
 ## `.groups` argument.</code></pre>
-<pre class="r"><code>library(emmeans)
-m &lt;- glm(X100~sex + year, family = gaussian, summary)
+<pre class="r"><code>write.csv(final_summary, file =&quot;HR_summary.csv&quot;)
+
+library(emmeans)
+m &lt;- glm(X100~sex * year, family = gaussian, summary)
 anova(m, test = &quot;Chisq&quot;)</code></pre>
 <pre><code>## Analysis of Deviance Table
 ## 
@@ -1226,10 +1234,11 @@ anova(m, test = &quot;Chisq&quot;)</code></pre>
 ## Terms added sequentially (first to last)
 ## 
 ## 
-##      Df Deviance Resid. Df Resid. Dev Pr(&gt;Chi)   
-## NULL                    61     2699.6            
-## sex   1   173.38        60     2526.2 0.028773 * 
-## year  2   422.95        58     2103.3 0.002933 **
+##          Df Deviance Resid. Df Resid. Dev Pr(&gt;Chi)   
+## NULL                        61     2699.6            
+## sex       1   173.38        60     2526.2 0.029528 * 
+## year      2   422.95        58     2103.3 0.003097 **
+## sex:year  2    53.42        56     2049.9 0.482086   
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
 <pre class="r"><code>e &lt;- emmeans(m, pairwise~sex|year)
@@ -1237,33 +1246,33 @@ e</code></pre>
 <pre><code>## $emmeans
 ## year = 2016:
 ##  sex emmean   SE df lower.CL upper.CL
-##  f    1.413 1.55 58   -1.684     4.51
-##  m    5.021 1.51 58    1.999     8.04
+##  f     1.70 1.91 56   -2.133     5.53
+##  m     4.76 1.82 56    1.106     8.41
 ## 
 ## year = 2017:
 ##  sex emmean   SE df lower.CL upper.CL
-##  f   -0.834 1.87 58   -4.578     2.91
-##  m    2.773 1.64 58   -0.509     6.05
+##  f     1.08 2.71 56   -4.340     6.50
+##  m     1.82 1.91 56   -2.017     5.65
 ## 
 ## year = 2018:
 ##  sex emmean   SE df lower.CL upper.CL
-##  f    5.491 1.48 58    2.519     8.46
-##  m    9.098 1.35 58    6.390    11.81
+##  f     4.36 1.82 56    0.706     8.01
+##  m     9.93 1.56 56    6.797    13.06
 ## 
 ## Confidence level used: 0.95 
 ## 
 ## $contrasts
 ## year = 2016:
 ##  contrast estimate   SE df t.ratio p.value
-##  f - m       -3.61 1.56 58  -2.314  0.0243
+##  f - m      -3.060 2.64 56  -1.158  0.2520
 ## 
 ## year = 2017:
 ##  contrast estimate   SE df t.ratio p.value
-##  f - m       -3.61 1.56 58  -2.314  0.0243
+##  f - m      -0.736 3.31 56  -0.222  0.8250
 ## 
 ## year = 2018:
 ##  contrast estimate   SE df t.ratio p.value
-##  f - m       -3.61 1.56 58  -2.314  0.0243</code></pre>
+##  f - m      -5.567 2.40 56  -2.318  0.0241</code></pre>
 <pre class="r"><code>###Try with older CRS projection
 ###2016 Projections
 track.pop &lt;-HR
@@ -1984,33 +1993,33 @@ e2</code></pre>
 <pre><code>## $emmeans
 ## year = 2016:
 ##  sex emmean   SE df lower.CL upper.CL
-##  f    1.413 1.55 58   -1.684     4.51
-##  m    5.021 1.51 58    1.999     8.04
+##  f     1.70 1.91 56   -2.133     5.53
+##  m     4.76 1.82 56    1.106     8.41
 ## 
 ## year = 2017:
 ##  sex emmean   SE df lower.CL upper.CL
-##  f   -0.834 1.87 58   -4.578     2.91
-##  m    2.773 1.64 58   -0.509     6.05
+##  f     1.08 2.71 56   -4.340     6.50
+##  m     1.82 1.91 56   -2.017     5.65
 ## 
 ## year = 2018:
 ##  sex emmean   SE df lower.CL upper.CL
-##  f    5.491 1.48 58    2.519     8.46
-##  m    9.098 1.35 58    6.390    11.81
+##  f     4.36 1.82 56    0.706     8.01
+##  m     9.93 1.56 56    6.797    13.06
 ## 
 ## Confidence level used: 0.95 
 ## 
 ## $contrasts
 ## year = 2016:
 ##  contrast estimate   SE df t.ratio p.value
-##  f - m       -3.61 1.56 58  -2.314  0.0243
+##  f - m      -3.060 2.64 56  -1.158  0.2520
 ## 
 ## year = 2017:
 ##  contrast estimate   SE df t.ratio p.value
-##  f - m       -3.61 1.56 58  -2.314  0.0243
+##  f - m      -0.736 3.31 56  -0.222  0.8250
 ## 
 ## year = 2018:
 ##  contrast estimate   SE df t.ratio p.value
-##  f - m       -3.61 1.56 58  -2.314  0.0243</code></pre>
+##  f - m      -5.567 2.40 56  -2.318  0.0241</code></pre>
 <pre class="r"><code>###Summary output provides the same data as the other one i ran so values are the same!</code></pre>
 <p>###Note: HR is in hectars</p>
 
