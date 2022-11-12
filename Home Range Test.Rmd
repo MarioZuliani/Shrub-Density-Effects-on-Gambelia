@@ -178,7 +178,7 @@ final_summary <- final_summary %>%
 ```
 ```{r}
 summary_liz <- Data_HR %>%
-  group_by(lizard, year, sex, X95) %>%
+  group_by(lizard, year, sex, mass, SVL_mm, tail, tail_mm, X95) %>%
   summarise()
 summary_liz <- summary_liz %>%
   na.omit()
@@ -194,6 +194,11 @@ summary <- Data_HR %>%
 summary <- summary %>%
   na.omit()
 
+Liz_Summary <- Data_HR %>%
+  group_by(lizard, year, sex, X100)%>%
+  summarise() %>% na.omit()
+
+write.csv(Liz_Summary, file = "Lizard_Summary.csv")
 
 male_2016 <- summary %>% filter(sex != "f") %>%
   filter(year == "2016")
@@ -230,8 +235,10 @@ final_summary <- final_summary %>%
   group_by(year, sex, st_error) %>%
   summarise(hr = mean(X100))
 
+write.csv(final_summary, file ="HR_summary.csv")
+
 library(emmeans)
-m <- glm(X100~sex + year, family = gaussian, summary)
+m <- glm(X100~sex * year, family = gaussian, summary)
 anova(m, test = "Chisq")
 e <- emmeans(m, pairwise~sex|year)
 e
