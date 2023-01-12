@@ -55,7 +55,7 @@ tidy_20m <- read.csv("tidy_20m.csv")%>%
 ###Main Data and RSPF function
 ```{r}
 library(ResourceSelection)
-library(dplyr)
+library(dplyr) 
 library(emmeans)
 data1 <- tidy_20m %>%
   dplyr::select(rep, status, year, ground, mesohabitat, Aspect.x, Slope.x, Elev.x, KDF.x, Shrub_Cov.x, NDVI.x, Solar.x, aspect.cat, twenty_meter)
@@ -154,15 +154,16 @@ rename(use = 'm2$fitted.values')
 #use model
 fig1 <-ggplot(p2, aes(shrub_density, use, color = ground)) +
 geom_smooth() +
-labs(fill = "", x = "Shrub Density", y= "Use", color = "Mesohabitat") +
-theme_classic() + scale_color_manual(values = c("above" = "red", "below" = "dark blue")) + labs(fill = "Mesohabitat") + theme(aspect.ratio = 1) +
+labs(fill = "", x = bquote('Shrub Density' ~(m^2)), y= "Use", color = "Mesohabitat") +
+theme_classic() + theme(text = element_text(size = 14), panel.border = element_rect(color = "black", fill = NA, size = 1.5),legend.title = element_blank(), axis.text = element_text(size = 10)) +
+  scale_color_manual(values = c("above" = "red", "below" = "dark blue")) + labs(fill = "Mesohabitat") + theme(aspect.ratio = 1) +
 xlim(0,200)
 fig1
 ```
 ```{r}
-fig3 <- ggplot (data, aes(x = shrub_density,y= shrub_cover)) +
-  geom_point() +
-  labs(fill = "", x = "Shrub Density", y= "Shrub Cover") + theme_classic() +  scale_color_manual(values = c("0" = "red", "1" = "dark blue")) + labs(fill = "Status") + theme(aspect.ratio = 1)  + xlim(0,60) + labs(color = "Mesohabitat")
+fig3 <- ggplot (data, aes(x = shrub_density,y= shrub_cover, colour = year)) +
+  geom_point() + 
+  labs(x =bquote('Shrub Density' ~(m^2)), y= 'Shrub Cover' ~(m^2)) + theme_classic() + theme(text = element_text(size = 14), panel.border = element_rect(color = "black", fill = NA, size = 1.5),, axis.text = element_text(size = 10)) + scale_color_manual(values = c("2016" = "red", "2017" = "dark blue", "2018" = "Dark Green")) + labs(fill = "Status") + theme(aspect.ratio = 1)  + xlim(0,60) + labs(color = "Year")
 fig3
 data_cor <- data[data$shrub_density <200,]
 res <- cor.test(data_cor$shrub_density, data_cor$shrub_cover)
@@ -215,5 +216,8 @@ summary(m7)
 
 m8 <- model.rspf_sex1(data_f)
 summary(m8)
-```
 
+m4 <- glm(twenty_meter ~ sex*year, family = poisson, new_data)
+anova(m4, test = "Chisq")
+
+```

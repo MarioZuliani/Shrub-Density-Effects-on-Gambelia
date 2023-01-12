@@ -1,0 +1,80 @@
+---
+title: "stats_2023"
+author: "Mario"
+date: "12/01/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+###Set up data (Same as previously done)
+```{r}
+library(tidyverse)
+library(sf)
+library(RColorBrewer)
+library(scales)
+#set key attributes####
+x = 4326 #crs for first spatial df
+y = 4326 #crs for second spatial df
+z = 20 #set buffer is using a join to point data SET FOR 20M
+#data, read in, set as sf, list projection####
+shrubs <- read_csv("shrubs.csv") %>% 
+  st_as_sf(coords=c("long","lat"), crs = x, remove=FALSE) %>% 
+  st_transform(32610) #crs = 32610 is UTM and will return distances in meters
+animals <- read_csv("tidy.csv") %>% 
+  st_as_sf(coords=c("long","lat"), crs = y, remove=FALSE) %>% 
+  st_transform(32610) #crs = 32610 is UTM and will return distances in meters
+#create buffer for point data####
+buffer <- st_buffer(animals, z) #decide on spatial scale
+#spatially returns overlap instances within a buffer####
+#returns a dataframe with only the positive co-occurrences
+joined.xy <- st_intersection(buffer, shrubs)
+#counts up multiple instances and generates new vector as counts by grouping factors####
+joined.xy <- joined.xy %>% 
+  group_by(uniID, lizard) %>% 
+  summarize(n_shrubs = n()) %>% 
+  st_drop_geometry
+#rejoins to first object, ie the buffer and generates instances with no overlaps as zero####
+tidy_all <- left_join(animals, joined.xy, by = "uniID") %>% 
+  dplyr::mutate(n_shrubs = replace_na(n_shrubs, 0))
+#QA/QC####
+#check to ensure df dimensions and that zeros are reasonable
+max(tidy_all$n_shrubs) #checks ecological viability
+min(tidy_all$n_shrubs) #checks ecological viability
+sum(tidy_all$n_shrubs) #checks positive co-occurrences
+nrow(buffer) - nrow(tidy_all)
+```
+###Distinct only!
+```{r}
+tidy_distinct <- tidy_all %>%
+  distinct() ###Does not change anything. Need to specify the lat long. See next area.
+```
+###Distinct With Specifying Lat/Long
+```{r}
+tidy_distinct2 <- tidy_all %>%
+  distinct(lat, long, .keep_all = TRUE) ###Outputs the same thing that we previously did!
+
+###4 decimal places
+tidy_rounded <- tidy_all
+tidy_rounded$rounded_lat <-  round(tidy_rounded$lat, digits = 4)
+tidy_rounded$rounded_long <- round(tidy_rounded$long, digits = 4)
+
+tidy_rounded <- tidy_rounded %>%
+  distinct(rounded_lat, rounded_long, .keep_all = TRUE) ###Outputs the same as previous work!
+
+
+
+###3 decimal placed
+tidy_rounded2 <- tidy_all
+tidy_rounded2$rounded_lat <-  round(tidy_rounded2$lat, digits = 3)
+tidy_rounded2$rounded_long <- round(tidy_rounded2$long, digits = 3)
+
+tidy_rounded2 <- tidy_rounded2 %>%
+  distinct(rounded_lat, rounded_long, .keep_all = TRUE) ###Outputs 420 datapoints only.
+
+###Do not want to do less than 3 digits because it is getting very general.
+###I think 4 digits is our best bet for this!
+```
+
