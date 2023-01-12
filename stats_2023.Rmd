@@ -49,12 +49,12 @@ nrow(buffer) - nrow(tidy_all)
 ###Distinct only!
 ```{r}
 tidy_distinct <- tidy_all %>%
-  distinct() ###Does not change anything. Need to specify the lat long. See next area.
+  distinct() ###Does not change anything. Need to specify the lat long. See next area. 9307
 ```
 ###Distinct With Specifying Lat/Long
 ```{r}
 tidy_distinct2 <- tidy_all %>%
-  distinct(lat, long, .keep_all = TRUE) ###Outputs the same thing that we previously did!
+  distinct(year, lat, long, .keep_all = TRUE) ###Outputs the same thing that we previously did! 4169
 
 ###4 decimal places
 tidy_rounded <- tidy_all
@@ -62,8 +62,7 @@ tidy_rounded$rounded_lat <-  round(tidy_rounded$lat, digits = 4)
 tidy_rounded$rounded_long <- round(tidy_rounded$long, digits = 4)
 
 tidy_rounded <- tidy_rounded %>%
-  distinct(rounded_lat, rounded_long, .keep_all = TRUE) ###Outputs the same as previous work!
-
+  distinct(year, rounded_lat, rounded_long, .keep_all = TRUE) ###Outputs the same as previous work! 4169 same as other line above
 
 
 ###3 decimal placed
@@ -72,7 +71,7 @@ tidy_rounded2$rounded_lat <-  round(tidy_rounded2$lat, digits = 3)
 tidy_rounded2$rounded_long <- round(tidy_rounded2$long, digits = 3)
 
 tidy_rounded2 <- tidy_rounded2 %>%
-  distinct(rounded_lat, rounded_long, .keep_all = TRUE) ###Outputs 420 datapoints only.
+  distinct(year, rounded_lat, rounded_long, .keep_all = TRUE) ###Outputs 1101 datapoints only.
 
 ###Do not want to do less than 3 digits because it is getting very general.
 ###I think 4 digits is our best bet for this!
