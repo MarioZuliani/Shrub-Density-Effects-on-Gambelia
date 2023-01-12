@@ -15,6 +15,7 @@ library(tidyverse)
 library(sf)
 library(RColorBrewer)
 library(scales)
+library(dplyr)
 #set key attributes####
 x = 4326 #crs for first spatial df
 y = 4326 #crs for second spatial df
@@ -46,6 +47,16 @@ min(tidy_all$n_shrubs) #checks ecological viability
 sum(tidy_all$n_shrubs) #checks positive co-occurrences
 nrow(buffer) - nrow(tidy_all)
 ```
+```{r}
+library(ResourceSelection)
+library(dplyr) 
+library(emmeans)
+tidy_all <- tidy_all %>%
+  dplyr::select(rep, status, lizard.x, year, ground, mesohabitat, Aspect.x, Slope.x, Elev.x, KDF.x, Shrub_Cov.x, NDVI.x, Solar.x, aspect.cat, lat, long, n_shrubs)
+names(tidy_all)[17] <- "twenty_meters"
+names(tidy_all)[3] <- "lizard"
+```
+
 ###Distinct only!
 ```{r}
 tidy_distinct <- tidy_all %>%
@@ -54,7 +65,7 @@ tidy_distinct <- tidy_all %>%
 ###Distinct With Specifying Lat/Long
 ```{r}
 tidy_distinct2 <- tidy_all %>%
-  distinct(year, lat, long, .keep_all = TRUE) ###Outputs the same thing that we previously did! 4169
+  distinct(year, lizard, lat, long, .keep_all = TRUE) ###Outputs the same thing that we previously did! 4169
 
 ###4 decimal places
 tidy_rounded <- tidy_all
@@ -62,7 +73,7 @@ tidy_rounded$rounded_lat <-  round(tidy_rounded$lat, digits = 4)
 tidy_rounded$rounded_long <- round(tidy_rounded$long, digits = 4)
 
 tidy_rounded <- tidy_rounded %>%
-  distinct(year, rounded_lat, rounded_long, .keep_all = TRUE) ###Outputs the same as previous work! 4169 same as other line above
+  distinct(year, lizard, rounded_lat, rounded_long, .keep_all = TRUE) ###Outputs the same as previous work! 4169 same as other line above
 
 
 ###3 decimal placed
@@ -71,7 +82,7 @@ tidy_rounded2$rounded_lat <-  round(tidy_rounded2$lat, digits = 3)
 tidy_rounded2$rounded_long <- round(tidy_rounded2$long, digits = 3)
 
 tidy_rounded2 <- tidy_rounded2 %>%
-  distinct(year, rounded_lat, rounded_long, .keep_all = TRUE) ###Outputs 1101 datapoints only.
+  distinct(year, lizard, rounded_lat, rounded_long, .keep_all = TRUE) ###Outputs 1101 datapoints only.
 
 ###Do not want to do less than 3 digits because it is getting very general.
 ###I think 4 digits is our best bet for this!
