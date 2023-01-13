@@ -88,7 +88,15 @@ tidy_rounded2 <- tidy_rounded2 %>%
 
 ###Do not want to do less than 3 digits because it is getting very general.
 ###I think 4 digits is our best bet for this!
+
+###Update:Deciding to do 4 decimal places. From a units standpoint it makes the most sense.
+
+###Note for Paper: I think the best bet rather than giving stats is in the methods state that duplicates were filtered to reduce observer bias and false observations (like the reviewer stated). I think a sentence or 2 in the methods saying that we filtered out duplicates based on individual lizards and by their GPS coordinates should cover our buns.
+
 ```
+
+
+
 
 ```{r}
 ###Filter by geometry!
@@ -96,18 +104,31 @@ filtered_geometry <- tidy_all%>%
   distinct(year, lizard, geometry, .keep_all = TRUE)
 ```
 
-
-
 ```{r}
+library(dplyr)
 distance_rounded <- filtered_geometry %>%
   group_by(lizard, year) %>%
   mutate(
     lead = geometry[row_number() + 1],
     dist = st_distance(geometry, lead, by_element = T),
   )
-
-###Stopping here rn. Need to get summary of data to work for distance.
+distance_rounded <- distance_rounded %>% na.omit()
 distance_summary <- distance_rounded %>%
   group_by(lizard) %>%
   summarise(average_dist = mean(dist))
+distance_final <- distance_summary %>% 
+  dplyr::select(lizard, average_dist)
+#write.csv(distance_summary, file = "lizard_distances.csv")
+```
+
+###Stats for distance
+```{r}
+lizard_distances <- read.csv("lizard_distances.csv")
+lizard_distances$lizard <- as.factor(lizard_distances$lizard)
+t.test(lizard_distances$average_dist, mu = 0)
+wilcox.test(lizard_distances$average_dist, mu = 0)
+###From what i can gather there is significance in distance traveled between lizards suggesting that lizard are not just staying in 1 spot within their home range and are constantly moving around. T.test p value < 0.0001 and Wilcox test < 0.0001.
+
+
+###Notes for Paper: So ran these stats to show that their is significance with lizard distances. This covers our buns for the reviewer that asked if they are moving much within their Home Ranges and shows that they aren't just staying in 1 spot or within one spot. A sentence in the methods explaining that we tested the average distances between lizard relocation to show that they are not just under one area. Then providing one line in the statistics just to prove that the lizards were moving around significantly when they were relocated.
 ```
