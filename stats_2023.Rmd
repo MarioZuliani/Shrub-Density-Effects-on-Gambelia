@@ -55,6 +55,8 @@ tidy_all <- tidy_all %>%
   dplyr::select(rep, status, lizard.x, year, ground, mesohabitat, Aspect.x, Slope.x, Elev.x, KDF.x, Shrub_Cov.x, NDVI.x, Solar.x, aspect.cat, lat, long, n_shrubs)
 names(tidy_all)[17] <- "twenty_meters"
 names(tidy_all)[3] <- "lizard"
+
+tidy_all <- tidy_all %>% filter(status > 0)
 ```
 
 ###Distinct only!
@@ -88,3 +90,24 @@ tidy_rounded2 <- tidy_rounded2 %>%
 ###I think 4 digits is our best bet for this!
 ```
 
+```{r}
+###Filter by geometry!
+filtered_geometry <- tidy_all%>%
+  distinct(year, lizard, geometry, .keep_all = TRUE)
+```
+
+
+
+```{r}
+distance_rounded <- filtered_geometry %>%
+  group_by(lizard, year) %>%
+  mutate(
+    lead = geometry[row_number() + 1],
+    dist = st_distance(geometry, lead, by_element = T),
+  )
+
+###Stopping here rn. Need to get summary of data to work for distance.
+distance_summary <- distance_rounded %>%
+  group_by(lizard) %>%
+  summarise(average_dist = mean(dist))
+```
