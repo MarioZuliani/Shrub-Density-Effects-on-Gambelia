@@ -6,10 +6,10 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message = FALSE)
 ```
 
-###Set up data (Same as previously done)
+### Set up data (Same as previously done)
 ```{r}
 library(tidyverse)
 library(sf)
@@ -56,79 +56,209 @@ tidy_all <- tidy_all %>%
 names(tidy_all)[17] <- "twenty_meters"
 names(tidy_all)[3] <- "lizard"
 
-tidy_all <- tidy_all %>% filter(status > 0)
 ```
 
-###Distinct only!
+### Distinct only!
 ```{r}
 tidy_distinct <- tidy_all %>%
-  distinct() ###Does not change anything. Need to specify the lat long. See next area. 9307
+  distinct() ### Does not change anything. Need to specify the lat long. See next area. 9307
 ```
-###Distinct With Specifying Lat/Long
+
+
+### Distinct With Specifying Lat/Long
 ```{r}
 tidy_distinct2 <- tidy_all %>%
-  distinct(year, lizard, lat, long, .keep_all = TRUE) ###Outputs the same thing that we previously did! 4169
+  distinct(year, lizard, lat, long, .keep_all = TRUE) ### Outputs the same thing that we previously did! 4169
 
-###4 decimal places
+### 4 decimal places
 tidy_rounded <- tidy_all
 tidy_rounded$rounded_lat <-  round(tidy_rounded$lat, digits = 4)
 tidy_rounded$rounded_long <- round(tidy_rounded$long, digits = 4)
 
 tidy_rounded <- tidy_rounded %>%
-  distinct(year, lizard, rounded_lat, rounded_long, .keep_all = TRUE) ###Outputs the same as previous work! 4169 same as other line above
+  distinct(year, lizard, rounded_lat, rounded_long, .keep_all = TRUE) ### Outputs the same as previous work! 4169 same as other line above
 
-
-###3 decimal placed
+### 3 decimal placed
 tidy_rounded2 <- tidy_all
 tidy_rounded2$rounded_lat <-  round(tidy_rounded2$lat, digits = 3)
 tidy_rounded2$rounded_long <- round(tidy_rounded2$long, digits = 3)
 
 tidy_rounded2 <- tidy_rounded2 %>%
-  distinct(year, lizard, rounded_lat, rounded_long, .keep_all = TRUE) ###Outputs 1101 datapoints only.
+  distinct(year, lizard, rounded_lat, rounded_long, .keep_all = TRUE) ### Outputs 1101 datapoints only.
 
-###Do not want to do less than 3 digits because it is getting very general.
-###I think 4 digits is our best bet for this!
+### Do not want to do less than 3 digits because it is getting very general.
+### I think 4 digits is our best bet for this!
 
-###Update:Deciding to do 4 decimal places. From a units standpoint it makes the most sense.
+### Update:Deciding to do 4 decimal places. From a units standpoint it makes the most sense.
 
-###Note for Paper: I think the best bet rather than giving stats is in the methods state that duplicates were filtered to reduce observer bias and false observations (like the reviewer stated). I think a sentence or 2 in the methods saying that we filtered out duplicates based on individual lizards and by their GPS coordinates should cover our buns.
+### Note for Paper: I think the best bet rather than giving stats is in the methods state that duplicates were filtered to reduce observer bias and false observations (like the reviewer stated). I think a sentence or 2 in the methods saying that we filtered out duplicates based on individual lizards and by their GPS coordinates should cover our buns.
 
 ```
 
-
-
-
+### Stats for Duplicates
 ```{r}
-###Filter by geometry!
-filtered_geometry <- tidy_all%>%
-  distinct(year, lizard, geometry, .keep_all = TRUE)
+w1 <- rspf(status ~ twenty_meters + NDVI.x + ground, tidy_all, m=0, B = 99, model = TRUE)
+summary(w1)
+  
+### Stats for just distinct()
+d1 <- rspf(status ~ twenty_meters + NDVI.x + ground, tidy_distinct, m=0, B = 99, model = TRUE)
+summary(d1)
+
+### stats for distinct(year,lizard, lat, long)
+d2 <- rspf(status ~ twenty_meters + NDVI.x + ground, tidy_distinct2, m=0, B = 99, model = TRUE)
+summary(d2)
+
+## Stats for 4 decimal place
+s1 <- rspf(status ~ twenty_meters + NDVI.x + ground, tidy_rounded, m=0, B = 99, model = TRUE)
+summary(s1)
+
+### Stats for 3 decimal Places
+s2 <- rspf(status ~ twenty_meters + NDVI.x + ground, tidy_rounded2, m=0, B = 99, model = TRUE)
+summary(s2)
 ```
 
+
+### For distance stats need to filter out status > 0 otherwise numbers make no sense.
 ```{r}
-library(dplyr)
-distance_rounded <- filtered_geometry %>%
+raw_distance <- tidy_all %>%
+  filter(status > 0 ) ### Filter out status > 0  results in 5214 data points
+
+
+### Distances for RAW data!
+distance_raw <- raw_distance %>%
   group_by(lizard, year) %>%
   mutate(
     lead = geometry[row_number() + 1],
     dist = st_distance(geometry, lead, by_element = T),
-  )
-distance_rounded <- distance_rounded %>% na.omit()
-distance_summary <- distance_rounded %>%
-  group_by(lizard) %>%
+  )   ### Outputs the distance from centroid to each lizard point! Need summary data to use for stats though.
+distance_raw <- distance_raw %>% na.omit()   ### Omit all NAs
+distance_raw_summary <- distance_raw %>%
+  group_by(lizard, year) %>%
   summarise(average_dist = mean(dist))
-distance_final <- distance_summary %>% 
-  dplyr::select(lizard, average_dist)
-#write.csv(distance_summary, file = "lizard_distances.csv")
+#write.csv(distance_raw_summary, file = "lizard_distances_raw.csv")
+# Cannot drop geometry column so need to do it manually and the reread file to use for stats. Do this for every file.
 ```
 
-###Stats for distance
 ```{r}
-lizard_distances <- read.csv("lizard_distances.csv")
-lizard_distances$lizard <- as.factor(lizard_distances$lizard)
-t.test(lizard_distances$average_dist, mu = 0)
-wilcox.test(lizard_distances$average_dist, mu = 0)
-###From what i can gather there is significance in distance traveled between lizards suggesting that lizard are not just staying in 1 spot within their home range and are constantly moving around. T.test p value < 0.0001 and Wilcox test < 0.0001.
+## Distinct with no specified factors
+distinct_distance <- tidy_distinct %>% filter(status > 0)
+
+distinct_distance <- distinct_distance %>%
+  group_by(lizard, year) %>%
+  mutate(
+    lead = geometry[row_number() + 1],
+    dist = st_distance(geometry, lead, by_element = T),
+  )   ### Outputs the distance from centroid to each lizard point! Need summary data to use for stats though.
+distinct_distance <- distinct_distance %>% na.omit()   ### Omit all NAs
+distinct_distance_summary <- distinct_distance %>%
+  group_by(lizard, year) %>%
+  summarise(average_dist = mean(dist))
+#write.csv(distinct_distance_summary, file = "distinct_distance1_summary.csv")
+```
+
+```{r}
+## Distinct(lizard, year, lat, long)
+distinct2_distance <- tidy_distinct2 %>% filter(status > 0)
+
+distinct2_distance <- distinct2_distance %>%
+  group_by(lizard, year) %>%
+  mutate(
+    lead = geometry[row_number() + 1],
+    dist = st_distance(geometry, lead, by_element = T),
+  )   ### Outputs the distance from centroid to each lizard point! Need summary data to use for stats though.
+distinct2_distance <- distinct2_distance %>% na.omit()   ### Omit all NAs
+distinct2_distance_summary <- distinct2_distance %>%
+  group_by(lizard, year) %>%
+  summarise(average_dist = mean(dist))
+#write.csv(distinct2_distance_summary, file = "distinct2_distance1_summary.csv")
+```
+
+```{r}
+## Rounded 4 decimal places
+distinct_4decimal <- tidy_rounded %>% filter(status > 0)
+
+distinct_4decimal <- distinct_4decimal %>%
+  group_by(lizard, year) %>%
+  mutate(
+    lead = geometry[row_number() + 1],
+    dist = st_distance(geometry, lead, by_element = T),
+  )   ### Outputs the distance from centroid to each lizard point! Need summary data to use for stats though.
+distinct_4decimal <- distinct_4decimal %>% na.omit()   ### Omit all NAs
+distinct_4decimal_summary <- distinct_4decimal %>%
+  group_by(lizard, year) %>%
+  summarise(average_dist = mean(dist))
+#write.csv(distinct_4decimal_summary, file = "distinct_4decimal_summary.csv")
+```
+
+```{r}
+## Rounded 3 decimal places
+distinct_3decimal <- tidy_rounded2 %>% filter(status > 0)
+
+distinct_3decimal <- distinct_3decimal %>%
+  group_by(lizard, year) %>%
+  mutate(
+    lead = geometry[row_number() + 1],
+    dist = st_distance(geometry, lead, by_element = T),
+  )   ### Outputs the distance from centroid to each lizard point! Need summary data to use for stats though.
+distinct_3decimal <- distinct_3decimal %>% na.omit()   ### Omit all NAs
+distinct_3decimal_summary <- distinct_3decimal %>%
+  group_by(lizard, year) %>%
+  summarise(average_dist = mean(dist))
+#write.csv(distinct_3decimal_summary, file = "distinct_3decimal_summary.csv")
+```
 
 
-###Notes for Paper: So ran these stats to show that their is significance with lizard distances. This covers our buns for the reviewer that asked if they are moving much within their Home Ranges and shows that they aren't just staying in 1 spot or within one spot. A sentence in the methods explaining that we tested the average distances between lizard relocation to show that they are not just under one area. Then providing one line in the statistics just to prove that the lizards were moving around significantly when they were relocated.
+
+### Stats for distance
+```{r}
+raw <- read.csv("lizard_distances_raw.csv")
+distinct1 <- read.csv("distinct_distance1_summary.csv")
+distinct2 <- read.csv("distinct2_distance1_summary.csv")
+rounded_4dec <- read.csv("distinct_4decimal_summary.csv")
+rounded_3dec <- read.csv("distinct_3decimal_summary.csv")
+```
+
+```{r}
+### Raw Stats
+a1 <- glm(year ~ average_dist, family = gaussian, raw)
+anova(a1, test = "Chisq")
+
+t.test(raw$average_dist, mu = 0)
+```
+```{r}
+### Distinct1
+a2 <- glm(year ~ average_dist, family = gaussian, distinct1)
+anova(a2, test = "Chisq")
+
+t.test(distinct1$average_dist, mu = 0)
+```
+```{r}
+### Distinct2
+a3 <- glm(year ~ average_dist, family = gaussian, distinct2)
+anova(a3, test = "Chisq")
+
+t.test(distinct2$average_dist, mu = 0)
+```
+```{r}
+### Rounded 4 Decimal Places
+a4 <- glm(year ~ average_dist, family = gaussian, rounded_4dec)
+anova(a4, test = "Chisq")
+
+t.test(rounded_4dec$average_dist, mu = 0)
+```
+```{r}
+### Rounded 3 Decimal Places
+a5 <- glm(year ~ average_dist, family = gaussian, rounded_3dec)
+anova(a5, test = "Chisq")
+
+t.test(rounded_3dec$average_dist, mu = 0)
+```
+
+```{r}
+
+
+### From what i can gather there is significance in distance traveled between lizards suggesting that lizard are not just staying in 1 spot within their home range and are constantly moving around. T.test p value < 0.0001 and Wilcox test < 0.0001.
+
+
+### Notes for Paper: So ran these stats to show that their is significance with lizard distances. This covers our buns for the reviewer that asked if they are moving much within their Home Ranges and shows that they aren't just staying in 1 spot or within one spot. A sentence in the methods explaining that we tested the average distances between lizard relocation to show that they are not just under one area. Then providing one line in the statistics just to prove that the lizards were moving around significantly when they were relocated.
 ```
