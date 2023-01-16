@@ -221,6 +221,23 @@ distinct_3decimal_summary <- distinct_3decimal %>%
 #write.csv(distinct_3decimal_summary, file = "distinct_3decimal_summary.csv")
 ```
 
+```{r}
+
+## distinct(year, lat, long, microsite)
+distinct_noliz <- tidy_distinct_no_lizID %>% filter(status > 0)
+
+distinct_noliz <- distinct_noliz %>%
+  group_by(lizard, year) %>%
+  mutate(
+    lead = geometry[row_number() + 1],
+    dist = st_distance(geometry, lead, by_element = T),
+  )   ### Outputs the distance from centroid to each lizard point! Need summary data to use for stats though.
+distinct_noliz <- distinct_noliz %>% na.omit()   ### Omit all NAs
+distinct_noliz_summary <- distinct_noliz %>%
+  group_by(lizard, year) %>%
+  summarise(average_dist = mean(dist))
+write.csv(distinct_noliz_summary, file = "distinct_noliz_summary.csv")
+```
 
 
 ### Stats for distance
@@ -266,6 +283,16 @@ a5 <- glm(year ~ average_dist, family = gaussian, rounded_3dec)
 anova(a5, test = "Chisq")
 
 t.test(rounded_3dec$average_dist, mu = 0)
+```
+```{r}
+### Compiled data from 3 df; distinct(), distinct(year, lizard, lat, long), and distinct(year, lat, long, microsite)
+
+final_table <- read.csv("Final_Table.csv")
+
+a6 <- glm(average_dist ~ dataframe + year, family = gaussian, final_table)
+anova(a6, test = "Chisq")
+
+t.test(final_table$average_dist, mu = 0)
 ```
 
 ```{r}
