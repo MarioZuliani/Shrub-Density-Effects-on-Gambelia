@@ -304,26 +304,45 @@ anova(a7, test = "Chisq")
 em2 <- emmeans(a7, pairwise~dataframe|year)
 em2
 ```
+```{r}
+final_table_summary <- final_table %>%   ### Omit all NAs
+  group_by(dataframe, year) %>%
+  summarise(mean_dist = mean(average_dist))
+
+library(dplyr)
+df <- final_table %>% 
+  group_by(dataframe, year) %>% 
+  summarise(mean_dist = mean(average_dist),
+            std = sd(average_dist))
+```
+
+
 
 ### Tables for Appendicies
 
 ```{r}
+library(knitr)
 ### Distinct number of datapoints per distinct function and specification
 table_1 <- read_csv("Distinct.csv")
-table_1
+kable(table_1)
 
 ### We combined this data from table_1 with the rspf data to make a MUCH nicer table for the MS
 ```
+
 ```{r}
 ### rspf outputs for all distinct specifications and total number of datapoints
 table_2 <- read_csv("rspf output.csv")
-table_2
+kable(table_2)
 
 ### This is the table we decided to include in the appendicie of the MS since it shows the rspf stats and all the data from the previous table_1
 ```
+```{r}
+kable(df)
+```
+
+
 
 ```{r}
-
 
 ### From what i can gather there is significance in distance traveled between lizards suggesting that lizard are not just staying in 1 spot within their home range and are constantly moving around. T.test p value < 0.0001 and Wilcox test < 0.0001.
 
