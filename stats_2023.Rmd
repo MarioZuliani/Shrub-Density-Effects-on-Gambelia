@@ -236,7 +236,7 @@ distinct_noliz <- distinct_noliz %>% na.omit()   ### Omit all NAs
 distinct_noliz_summary <- distinct_noliz %>%
   group_by(lizard, year) %>%
   summarise(average_dist = mean(dist))
-write.csv(distinct_noliz_summary, file = "distinct_noliz_summary.csv")
+#write.csv(distinct_noliz_summary, file = "distinct_noliz_summary.csv")
 ```
 
 
@@ -292,7 +292,34 @@ final_table <- read.csv("Final_Table.csv")
 a6 <- glm(average_dist ~ dataframe + year, family = gaussian, final_table)
 anova(a6, test = "Chisq")
 
+em <- emmeans(a6, pairwise~dataframe|year)
+em
+
 t.test(final_table$average_dist, mu = 0)
+```
+```{r}
+a7 <- glm(average_dist ~ dataframe * year, family = gaussian, final_table)
+anova(a7, test = "Chisq")
+
+em2 <- emmeans(a7, pairwise~dataframe|year)
+em2
+```
+
+### Tables for Appendicies
+
+```{r}
+### Distinct number of datapoints per distinct function and specification
+table_1 <- read_csv("Distinct.csv")
+table_1
+
+### We combined this data from table_1 with the rspf data to make a MUCH nicer table for the MS
+```
+```{r}
+### rspf outputs for all distinct specifications and total number of datapoints
+table_2 <- read_csv("rspf output.csv")
+table_2
+
+### This is the table we decided to include in the appendicie of the MS since it shows the rspf stats and all the data from the previous table_1
 ```
 
 ```{r}
