@@ -313,7 +313,7 @@ library(dplyr)
 df <- final_table %>% 
   group_by(dataframe, year) %>% 
   summarise(mean_dist = mean(average_dist),
-            std = sd(average_dist))
+            ste = sd(average_dist)/sqrt(length(average_dist)))
 ```
 
 
